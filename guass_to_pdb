@@ -1,0 +1,170 @@
+'''
+-run guassian dft with initial file.
+-find final coordinates of log file for the dft
+-create a new file for dft run with previous run coordinates and add solvent option
+-run dft with new file
+-take log file from second dft run, convert to pdb
+'''
+
+import os
+import sys
+import subprocess
+import re 
+
+#generate with avogadro with name: "base".com
+base = str('name of file')
+
+
+
+
+com_file = base+'.com'
+
+log_file1 = base+'.log'
+
+new_water_file = base+'_water.com'
+ 
+log_file2 = base+'_water.log'
+
+log_files = [log_file1, log_file2]
+
+
+
+
+os.system("g09 "+com_file)
+
+for log_file in log_files: 
+	
+	if log_files.index(log_file) == 0:
+		pass 
+		
+		file = open(str(log_file), "r")
+		lines = file.readlines()
+		file.close()
+
+		file = open('new_coordinates.txt', "w")
+
+		indexes = []
+
+		for line in lines:
+				if  str(line).startswith(" Rotational constants (GHZ)"):
+					end = int(lines.index(line))
+					indexes.append(end)
+				else:
+					pass
+		
+
+		end_coords_index = max(indexes)
+		start_coords_index = end_coords_index -(total_number_atoms + 5)
+		print(end_coords_index)
+
+
+		for line in lines[start_coords_index:end_coords_index]:
+			file.write(line)
+
+		file.close()
+
+
+		file = open('new_coordinates.txt', "r")
+		lines = file.readlines()
+		file.close()
+
+		file = open('grab_coordinates.txt', 'w')
+
+		def num_there(s):
+			return any(i.isdigit() for i in s)
+
+		for line in lines:
+			if num_there(line) == True:
+				file.write(line)
+			else:
+				pass
+
+
+		file.close()
+		
+		file = open('grab_coordinates.txt', "r")
+		lines = file.readlines()
+		file.close()
+
+		new_coords1 =[]
+		new_coords2 =[]
+		new_coords3 =[]
+		for line in lines:
+			new_str = line.split()
+			new_coords1.append(new_str[3])
+			new_coords2.append(new_str[4])
+			new_coords3.append(new_str[5])
+
+		file = open(com_file, 'r')
+		lines2 = file.readlines()
+		file.close()
+
+		len_molecules = len(lines)
+		len_com_extra = len(lines2) - len_molecules
+		len_intro = len_com_extra - 2 
+	
+	else:
+		if log_files.index(log_file) == 1:
+	
+			file1 = open(com_file_base+'_water.com', 'w')
+
+			for line in lines2:
+				if line in lines2[0:len_intro+1]:
+					if lines2.index(line) == 1:
+						new_str = line.split()
+						join_str = " ".join(new_str)+" SCRF=(Solvent=Water)\n"
+						file1.write(join_str)
+					else:
+						file1.write(line)
+				else:
+					if line in lines2[len_intro+1:int(len_intro+len_molecules+2)]:
+						new_str = line.split()
+						new_str[0] = new_str[0]+"     "
+						new_str[1] = new_coords1[int(lines2.index(line))-int(len_intro+1)]
+						if str(new_str[1]).find('-') != -1:
+							pass
+						else:	
+							new_str[1] = " "+str(new_str[1])
+						new_str[2] = new_coords2[int(lines2.index(line))-int(len_intro+1)]
+						if str(new_str[2]).find('-') != -1:
+							pass
+						else:	
+							new_str[2] = " "+str(new_str[2])
+						new_str[3] = new_coords3[int(lines2.index(line))-int(len_intro+1)]
+						if str(new_str[3]).find('-') != -1:
+							pass
+						else:	
+							new_str[3] = " "+str(new_str[3])
+						join_str = "   ".join(new_str)+"\n"
+						file1.write(join_str)
+					else: 
+						new_str = line.split()
+						new_str[0] = new_str[0]+"    "
+						if str(new_str[1]).find('-') != -1:
+							pass
+						else:	
+							new_str[1] = " "+str(new_str[1])
+						if str(new_str[2]).find('-') != -1:
+							pass
+						else:	
+							new_str[2] = " "+str(new_str[2])
+						if str(new_str[3]).find('-') != -1:
+							pass
+						else:	
+							new_str[3] = " "+str(new_str[3])		
+						join_str = "    ".join(new_str)+"\n"
+						file1.write(join_str)
+			
+			file1.close()
+			
+				
+		os.system('g09 '+new_water_file)
+		
+
+#################################Getting .pdb File#############################
+
+log_file2 = base+'_water.log'
+
+os.system('obabel '+log_file2+' -O '+base+'.pdb -d')
+
+pdb_from_dft = base+'.pdb'
